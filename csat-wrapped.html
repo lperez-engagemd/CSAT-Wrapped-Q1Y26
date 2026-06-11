@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EngagedMD CSAT Wrapped</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: #000;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ===== PROGRESS BAR ===== */
+  #progress-bar-container {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    gap: 5px;
+    padding: 14px 16px 0;
+  }
+
+  .progress-segment {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: white;
+    width: 0%;
+    border-radius: 3px;
+  }
+  .progress-fill.done { width: 100%; }
+  .progress-fill.active {
+    animation: fillProgress var(--dur, 6s) linear forwards;
+  }
+
+  @keyframes fillProgress {
+    from { width: 0%; }
+    to   { width: 100%; }
+  }
+
+  /* ===== NAV ZONES ===== */
+  #nav-left, #nav-right {
+    position: fixed;
+    top: 0; bottom: 0;
+    width: 30%;
+    z-index: 50;
+    cursor: pointer;
+  }
+  #nav-left  { left: 0; }
+  #nav-right { right: 0; }
+
+  /* ===== SLIDES ===== */
+  #slides-container { width: 100%; height: 100%; position: relative; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 52px 40px 44px;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .slide.active { opacity: 1; }
+
+  .slide-enter { animation: slideEnter 0.45s cubic-bezier(0.22,1,0.36,1) forwards; }
+  .slide-exit  { animation: slideExit 0.35s ease-in forwards; }
+
+  @keyframes slideEnter {
+    from { opacity: 0; transform: scale(0.95) translateY(18px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes slideExit {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(1.03); }
+  }
+
+  /* ===== TEXT ANIMATIONS ===== */
+  .anim-up { opacity: 0; animation: animUp 0.55s cubic-bezier(0.22,1,0.36,1) forwards; }
+  .d1 { animation-delay: 0.25s; }
+  .d2 { animation-delay: 0.45s; }
+  .d3 { animation-delay: 0.6s; }
+  .d4 { animation-delay: 0.75s; }
+  .d5 { animation-delay: 0.88s; }
+
+  @keyframes animUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .anim-pop { opacity: 0; animation: animPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  @keyframes animPop {
+    from { opacity: 0; transform: scale(0.65); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* ===== BACKGROUNDS ===== */
+  .bg-teal   { background: linear-gradient(145deg, #002E28 0%, #00B4A2 100%); }
+  .bg-navy   { background: linear-gradient(145deg, #0D1B3E 0%, #2D3F6B 100%); }
+  .bg-purple { background: linear-gradient(145deg, #1E0F40 0%, #6A3FB5 100%); }
+  .bg-gold   { background: linear-gradient(145deg, #3A1F00 0%, #D4880A 100%); }
+  .bg-coral  { background: linear-gradient(145deg, #3D0808 0%, #E05555 100%); }
+  .bg-blue   { background: linear-gradient(145deg, #071529 0%, #2F72C4 100%); }
+  .bg-green  { background: linear-gradient(145deg, #062010 0%, #1E9655 100%); }
+  .bg-dark   { background: linear-gradient(145deg, #060606 0%, #151525 100%); }
+  .bg-warm   { background: linear-gradient(145deg, #3D1200 0%, #C0392B 100%); }
+
+  /* ===== BLOBS ===== */
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    pointer-events: none;
+    opacity: 0.25;
+  }
+
+  /* ===== SLIDE HEADER ===== */
+  .slide-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 8px;
+  }
+
+  .slide-title {
+    font-size: clamp(22px, 4.5vw, 36px);
+    font-weight: 900;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .slide-subtitle {
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 22px;
+  }
+
+  /* ===== QUOTE CARD GRID ===== */
+  .cards-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .cards-area::-webkit-scrollbar { display: none; }
+
+  .cards-grid {
+    display: grid;
+    gap: 12px;
+  }
+  .cards-grid.col-2 { grid-template-columns: 1fr 1fr; }
+  .cards-grid.col-1 { grid-template-columns: 1fr; }
+
+  .qcard {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 14px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+  }
+
+  .qcard::before {
+    content: '\201C';
+    position: absolute;
+    top: -8px; right: 12px;
+    font-size: 56px;
+    font-family: Georgia, serif;
+    color: rgba(255,255,255,0.1);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .qcard p {
+    font-size: clamp(12px, 1.6vw, 14.5px);
+    line-height: 1.55;
+    color: rgba(255,255,255,0.9);
+    font-style: italic;
+    position: relative;
+  }
+
+  /* ===== FEATURED QUOTE (single big card) ===== */
+  .featured-card {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 28px 32px;
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .featured-card::before {
+    content: '\201C';
+    position: absolute;
+    top: -10px; left: 20px;
+    font-size: 120px;
+    font-family: Georgia, serif;
+    color: rgba(255,255,255,0.07);
+    line-height: 1;
+  }
+
+  .featured-card p {
+    font-size: clamp(17px, 2.8vw, 24px);
+    line-height: 1.6;
+    color: white;
+    font-style: italic;
+    position: relative;
+  }
+
+  /* ===== CSAT STATS ===== */
+  .stats-row {
+    display: flex;
+    gap: 0;
+    flex: 1;
+    align-items: stretch;
+  }
+
+  .stat-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    margin: 0 6px;
+    gap: 8px;
+  }
+
+  .stat-num {
+    font-size: clamp(40px, 8vw, 64px);
+    font-weight: 900;
+    color: white;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  /* ===== SHOUTOUT CARDS ===== */
+  .shoutout-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    flex: 1;
+  }
+
+  .shoutout-card {
+    background: rgba(255,255,255,0.09);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .shoutout-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: white;
+  }
+
+  .shoutout-name span {
+    font-size: 20px;
+    margin-right: 6px;
+  }
+
+  .shoutout-card p {
+    font-size: clamp(12px, 1.5vw, 14px);
+    line-height: 1.55;
+    color: rgba(255,255,255,0.82);
+    font-style: italic;
+  }
+
+  /* ===== INTRO / OUTRO ===== */
+  .center-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .big-emoji { font-size: clamp(52px, 10vw, 72px); line-height: 1; display: block; margin-bottom: 20px; }
+  .big-text  { font-size: clamp(28px, 5.5vw, 48px); font-weight: 900; color: white; line-height: 1.12; }
+  .sub-text  { font-size: clamp(14px, 2vw, 18px); color: rgba(255,255,255,0.6); margin-top: 14px; line-height: 1.5; }
+
+  .outro-logo { font-size: 30px; font-weight: 900; color: white; margin-bottom: 14px; }
+  .outro-logo span { color: #00E5D0; }
+
+  /* ===== REPLAY ===== */
+  #replay-btn {
+    position: fixed;
+    bottom: 36px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.12);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px; font-weight: 600;
+    padding: 12px 32px;
+    border-radius: 100px;
+    cursor: pointer;
+    display: none;
+    z-index: 100;
+    letter-spacing: 0.04em;
+    transition: background 0.2s;
+  }
+  #replay-btn:hover { background: rgba(255,255,255,0.22); }
+
+  #hint {
+    position: fixed;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.3);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    z-index: 40;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 600px) {
+    .slide { padding: 48px 20px 36px; }
+    .cards-grid.col-2 { grid-template-columns: 1fr; }
+    .shoutout-grid { grid-template-columns: 1fr; }
+    .stats-row { flex-direction: column; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress-bar-container"></div>
+<div id="nav-left"></div>
+<div id="nav-right"></div>
+
+<div id="slides-container">
+
+  <!-- 1. INTRO -->
+  <div class="slide bg-teal" id="slide-0">
+    <div class="blob" style="width:340px;height:340px;background:#00FFE5;top:-120px;right:-100px;"></div>
+    <div class="blob" style="width:260px;height:260px;background:#005A50;bottom:-80px;left:-80px;"></div>
+    <div class="center-content">
+      <span class="big-emoji anim-pop d1">💚</span>
+      <div class="big-text anim-up d2">Here's what our<br>customers had to say</div>
+      <div class="sub-text anim-up d3">Real feedback. Real impact.<br>CSAT Highlights 2026.</div>
+      <div class="anim-up d4" style="margin-top:22px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:100px;padding:8px 22px;font-size:13px;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:0.04em;">🏆 All-time record highs across every score</div>
+    </div>
+  </div>
+
+  <!-- 2. CSAT SCORES -->
+  <div class="slide bg-navy" id="slide-1">
+    <div class="blob" style="width:300px;height:300px;background:#4A90D9;top:-80px;right:-80px;opacity:0.3"></div>
+    <div class="slide-label anim-up d1">🏆 All-time record highs</div>
+    <div class="slide-title anim-up d2">Our scores are 🔥</div>
+    <div class="slide-subtitle anim-up d3">Every single one — a new record</div>
+    <div class="stats-row anim-up d4">
+      <div class="stat-block">
+        <div class="stat-num" data-target="91.2" data-suffix="%">–</div>
+        <div class="stat-label">EngagedMD CSAT</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num" data-target="94.1" data-suffix="%">–</div>
+        <div class="stat-label">CSM CSAT</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num" data-target="92.4" data-suffix="%">–</div>
+        <div class="stat-label">Support CSAT</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. STANDOUT QUOTE -->
+  <div class="slide bg-purple" id="slide-2">
+    <div class="blob" style="width:300px;height:300px;background:#B39DDB;top:-80px;right:-80px;"></div>
+    <div class="slide-label anim-up d1">⭐ Standout quote</div>
+    <div class="slide-title anim-up d2">This one says it all.</div>
+    <div class="slide-subtitle anim-up d3">On the patient experience</div>
+    <div class="featured-card anim-up d4">
+      <p>"One of the most noticeable impacts has been on the patient experience. Fertility treatment can be overwhelming, and patients often receive a large amount of information in a short period of time. EngagedMD allows patients to review educational materials when they are ready, share them with partners, and revisit content."</p>
+    </div>
+  </div>
+
+  <!-- 4. TIME SAVED -->
+  <div class="slide bg-teal" id="slide-3">
+    <div class="blob" style="width:320px;height:320px;background:#00FFE5;bottom:-100px;right:-100px;opacity:0.2"></div>
+    <div class="slide-label anim-up d1">⚡ Time saved & workflows streamlined</div>
+    <div class="slide-title anim-up d2">Less admin.<br>More patient care.</div>
+    <div class="slide-subtitle anim-up d3">Clinics are getting hours back</div>
+    <div class="cards-area anim-up d4">
+      <div class="cards-grid col-2">
+        <div class="qcard"><p>"It definitely helps reduce the time RNs spend on patient education, specifically in regard to injection teaching."</p></div>
+        <div class="qcard"><p>"Tons of time saved by being able to sign electronically."</p></div>
+        <div class="qcard"><p>"It has helped streamline our consent process."</p></div>
+        <div class="qcard"><p>"Signing of forms is streamlined compared to manual signing and video educational modules allow patients to have a more informed journey with the ability to revisit at any time - this hasn't cut down our nursing time as such but allows more time to be spent on the individual plans for patients."</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. BETTER PATIENT EXPERIENCE -->
+  <div class="slide bg-purple" id="slide-4">
+    <div class="blob" style="width:280px;height:280px;background:#CE93D8;top:-80px;left:-80px;opacity:0.25"></div>
+    <div class="slide-label anim-up d1">💙 Better patient experience</div>
+    <div class="slide-title anim-up d2">Patients more informed.<br>Visits more meaningful.</div>
+    <div class="slide-subtitle anim-up d3">The consult just got smoother</div>
+    <div class="cards-area anim-up d4">
+      <div class="cards-grid col-2">
+        <div class="qcard"><p>"Seen value in patient engagement, understanding, reinforcement of materials."</p></div>
+        <div class="qcard"><p>"Patients are better informed and it makes the consult with the doctor much smoother."</p></div>
+        <div class="qcard"><p>"Better patient experience, less compliance issues with manual signing of consents."</p></div>
+        <div class="qcard"><p>"We would not be able to care for the volume of patients we do without EngagedMD."</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. COMPLIANCE & SECURITY -->
+  <div class="slide bg-gold" id="slide-5">
+    <div class="blob" style="width:300px;height:300px;background:#FFD54F;top:-80px;right:-80px;opacity:0.25"></div>
+    <div class="slide-label anim-up d1">🔒 Compliance & security wins</div>
+    <div class="slide-title anim-up d2">Measurable. Trackable.<br>Trustworthy.</div>
+    <div class="slide-subtitle anim-up d3">Clinics feel the confidence</div>
+    <div class="cards-area anim-up d4">
+      <div class="cards-grid col-2">
+        <div class="qcard"><p>"99% of our forms go out with authentication. I love that it is measurable, easily tracked — I can feel comfortable knowing there is an extra layer of security for our patients."</p></div>
+        <div class="qcard"><p>"We have had better compliance with receiving our consents back in a timely manner."</p></div>
+        <div class="qcard"><p>"With Navigate we are beginning to see better compliance of completing intake forms than previously."</p></div>
+        <div class="qcard"><p>"Clear management of documents, forms and released vs watched modules."</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. EASE OF USE -->
+  <div class="slide bg-coral" id="slide-6">
+    <div class="blob" style="width:280px;height:280px;background:#FF8A80;bottom:-80px;left:-80px;opacity:0.25"></div>
+    <div class="slide-label anim-up d1">🎯 Ease of use</div>
+    <div class="slide-title anim-up d2">Simple for staff.<br>Simple for patients.</div>
+    <div class="slide-subtitle anim-up d3">From portal to EMR</div>
+    <div class="cards-area anim-up d4">
+      <div class="cards-grid col-2">
+        <div class="qcard"><p>"Ease of sending consents and document visibility by both staff and patients is very valuable."</p></div>
+        <div class="qcard"><p>"Everything is easy to use from the portal to getting a question answered."</p></div>
+        <div class="qcard"><p>"Ease of use for employees and patients. The integration to our EMR is so helpful."</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. TEAM SHOUTOUTS -->
+  <div class="slide bg-green" id="slide-7">
+    <div class="blob" style="width:300px;height:300px;background:#69F0AE;top:-80px;right:-80px;opacity:0.2"></div>
+    <div class="slide-label anim-up d1">🌟 Team shoutouts</div>
+    <div class="slide-title anim-up d2">Going above &amp; beyond.</div>
+    <div class="slide-subtitle anim-up d3">Megan &amp; Esther, you're noticed</div>
+    <div class="shoutout-grid anim-up d4">
+      <div class="shoutout-card">
+        <div class="shoutout-name"><span>⭐</span>Megan</div>
+        <p>"Megan is always positive; she listens and supports me in all the ways she can. She is kind and willing to go the extra mile when it comes to assisting me with gathering data, training staff, improving workflows, etc."</p>
+      </div>
+      <div class="shoutout-card">
+        <div class="shoutout-name"><span>⭐</span>Esther</div>
+        <p>"Esther provides invaluable information on what we have been doing which has allowed us to change our practices such as putting in a treatment deposit to help increase the viewing rate of cycles."</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. SUPPORT TEAM -->
+  <div class="slide bg-blue" id="slide-8">
+    <div class="blob" style="width:300px;height:300px;background:#82B1FF;top:-80px;right:-80px;opacity:0.2"></div>
+    <div class="slide-label anim-up d1">🎧 Support team kudos</div>
+    <div class="slide-title anim-up d2">Fast. Thorough.<br>Always there.</div>
+    <div class="slide-subtitle anim-up d3">92.4% Support CSAT and they earned it</div>
+    <div class="cards-area anim-up d4">
+      <div class="cards-grid col-2">
+        <div class="qcard"><p>"They respond promptly, provide great info and are always thorough."</p></div>
+        <div class="qcard"><p>"They are quick to respond to our needs/requests."</p></div>
+        <div class="qcard"><p>"Quick reply times and efficient follow up for patients and staff."</p></div>
+        <div class="qcard"><p>"When the new platform was rolled out the support team helped troubleshoot issues and made things much easier."</p></div>
+        <div class="qcard"><p>"Support team are always very helpful — now we have a UK member, action is made more quickly which has been useful."</p></div>
+        <div class="qcard"><p>"Prompt response, good support."</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. CAN'T IMAGINE LIFE WITHOUT IT -->
+  <div class="slide bg-warm" id="slide-9">
+    <div class="blob" style="width:300px;height:300px;background:#FF6B6B;top:-80px;right:-80px;opacity:0.25"></div>
+    <div class="blob" style="width:240px;height:240px;background:#FFD54F;bottom:-60px;left:-60px;opacity:0.2"></div>
+    <div class="slide-label anim-up d1">🏆 Can't imagine life without it</div>
+    <div class="slide-title anim-up d2">The ultimate<br>endorsement.</div>
+    <div class="slide-subtitle anim-up d3">When customers say it best</div>
+    <div class="featured-card anim-up d4">
+      <p>"Yes, we would not be able to care for the volume of patients we do without EngagedMD."</p>
+    </div>
+  </div>
+
+  <!-- 11. OUTRO -->
+  <div class="slide bg-dark" id="slide-10">
+    <div class="blob" style="width:500px;height:500px;background:#00B4A2;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.07;filter:blur(90px)"></div>
+    <div class="center-content">
+      <div class="outro-logo anim-pop d1">Engaged<span>MD</span></div>
+      <div class="big-text anim-up d2" style="font-size:clamp(22px,4vw,38px)">All-time records.<br>Keep crushing it, team. 🎉</div>
+      <div class="sub-text anim-up d3" style="font-size:13px;color:rgba(255,255,255,0.3);margin-top:20px">CSAT Highlights · 2026</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="hint">← tap left to go back &nbsp;·&nbsp; tap right to advance →</div>
+<button id="replay-btn">↺ Watch Again</button>
+
+<script>
+  const DURATIONS = [5,6,10,13,13,13,12,13,14,10,9]; // seconds per slide
+  const slides = document.querySelectorAll('.slide');
+  const progressContainer = document.getElementById('progress-bar-container');
+  const replayBtn = document.getElementById('replay-btn');
+  const hint = document.getElementById('hint');
+
+  let current = 0, timer = null, isPaused = false, elapsed = 0, pauseStart = 0;
+  let fills = [];
+
+  // Build progress bar
+  slides.forEach(() => {
+    const seg = document.createElement('div');
+    seg.className = 'progress-segment';
+    const fill = document.createElement('div');
+    fill.className = 'progress-fill';
+    seg.appendChild(fill);
+    progressContainer.appendChild(seg);
+    fills.push(fill);
+  });
+
+  function showSlide(index) {
+    if (index < 0) index = 0;
+    if (index >= slides.length) { endShow(); return; }
+
+    // Exit current
+    slides.forEach((s,i) => {
+      if (i !== index && s.classList.contains('active')) {
+        s.classList.add('slide-exit');
+        s.classList.remove('active');
+        setTimeout(() => s.classList.remove('slide-exit'), 400);
+      }
+    });
+
+    current = index;
+    const slide = slides[index];
+    slide.classList.add('active', 'slide-enter');
+    setTimeout(() => slide.classList.remove('slide-enter'), 500);
+
+    // Re-trigger .anim-up elements
+    slide.querySelectorAll('.anim-up, .anim-pop').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight;
+      el.style.animation = '';
+    });
+
+    // Progress fills
+    const dur = DURATIONS[index] || 6;
+    fills.forEach((f,i) => {
+      f.style.animation = 'none';
+      f.offsetHeight;
+      if (i < index)       { f.className = 'progress-fill done'; }
+      else if (i === index) {
+        f.className = 'progress-fill active';
+        f.style.setProperty('--dur', dur + 's');
+        f.style.animation = '';
+      } else               { f.className = 'progress-fill'; }
+    });
+
+    // Count-up for CSAT slide
+    if (index === 1) {
+      slide.querySelectorAll('[data-target]').forEach(el => {
+        const target = parseFloat(el.dataset.target);
+        const suffix = el.dataset.suffix || '';
+        const startTime = Date.now() + 500;
+        const duration = 1600;
+        el.textContent = '0' + suffix;
+        function tick() {
+          const progress = Math.min((Date.now() - startTime) / duration, 1);
+          if (progress < 0) { requestAnimationFrame(tick); return; }
+          el.textContent = (target * (1 - Math.pow(1 - progress, 3))).toFixed(1) + suffix;
+          if (progress < 1) requestAnimationFrame(tick);
+          else el.textContent = target.toFixed(1) + suffix;
+        }
+        requestAnimationFrame(tick);
+      });
+    }
+
+    elapsed = 0;
+    clearTimeout(timer);
+    timer = setTimeout(() => showSlide(current + 1), dur * 1000);
+  }
+
+  function endShow() {
+    slides.forEach(s => s.classList.remove('active','slide-enter'));
+    slides[slides.length-1].classList.add('active');
+    fills.forEach(f => f.className = 'progress-fill done');
+    replayBtn.style.display = 'block';
+    hint.style.display = 'none';
+    clearTimeout(timer);
+  }
+
+  // Nav
+  document.getElementById('nav-right').addEventListener('click', () => showSlide(current + 1));
+  document.getElementById('nav-left').addEventListener('click',  () => showSlide(current - 1));
+
+  // Hold to pause
+  let holdTimeout;
+  ['nav-left','nav-right'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('pointerdown', () => {
+      holdTimeout = setTimeout(() => {
+        isPaused = true;
+        pauseStart = Date.now();
+        clearTimeout(timer);
+        fills[current].style.animationPlayState = 'paused';
+      }, 180);
+    });
+    el.addEventListener('pointerup', () => {
+      clearTimeout(holdTimeout);
+      if (isPaused) {
+        isPaused = false;
+        const remaining = (DURATIONS[current] || 6) * 1000 - elapsed - (Date.now() - pauseStart);
+        fills[current].style.animationPlayState = 'running';
+        timer = setTimeout(() => showSlide(current + 1), Math.max(remaining, 300));
+      }
+    });
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') showSlide(current + 1);
+    if (e.key === 'ArrowLeft') showSlide(current - 1);
+  });
+
+  replayBtn.addEventListener('click', () => {
+    replayBtn.style.display = 'none';
+    hint.style.display = '';
+    showSlide(0);
+  });
+
+  showSlide(0);
+</script>
+</body>
+</html>
